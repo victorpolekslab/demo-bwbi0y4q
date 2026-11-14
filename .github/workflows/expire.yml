@@ -1,0 +1,23 @@
+name: Срок демо-доступа
+on:
+  schedule:
+    - cron: '7 20 * * *'   # 01:07 по Екатеринбургу
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  expire:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Закрыть демо после срока
+        run: |
+          UNTIL=2026-11-28
+          TODAY=$(TZ=Asia/Yekaterinburg date +%F)
+          echo "сегодня $TODAY, доступ до $UNTIL"
+          if [ ! -f .github/expired/index.html ] || [ ! "$TODAY" \> "$UNTIL" ] || [ -f expired.flag ]; then exit 0; fi
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
+          cp .github/expired/index.html .github/expired/sw.js . && touch .nojekyll expired.flag
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -m "Демо-доступ закончился" && git push
